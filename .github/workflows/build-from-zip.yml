@@ -1,9 +1,0 @@
-<?xml version='1.0' encoding='utf-8' ?>
-<Error>
-	<Code>NoSuchKey</Code>
-	<Message>The specified key does not exist.</Message>
-	<Resource>/outputs/1799/bf8cae97734e45e48c71d3cbac96752b/0QpberJIf7g/build-from-zip.yml</Resource>
-	<RequestId>UzFfNmFiYmY2ZTdfMl9mNjY3ZDYxY18zZjA0ZV8zOTg5MjE=</RequestId>
-	<TraceId/>
-</Error>
-
