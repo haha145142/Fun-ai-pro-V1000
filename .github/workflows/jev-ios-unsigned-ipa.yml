@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       upstream_ref:
-        description: "上游源码分支或 tag（默认 main）"
+        description: "上游源码分支（默认 main）"
         required: false
         default: "main"
         type: string
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build-unsigned-ipa:
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 45
     steps:
       - name: 检出本仓库（读取工作流）
