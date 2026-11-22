@@ -1,0 +1,76 @@
+name: 云编译狗头军师 iOS 未签名 IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: "上游源码分支或 tag（默认 main）"
+        required: false
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-unsigned-ipa:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: 检出本仓库（读取工作流）
+        uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen 无关依赖并确认 Xcode
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: 下载狗头军师 iOS 源码
+        env:
+          UPSTREAM_REF: ${{ inputs.upstream_ref }}
+        run: |
+          set -euo pipefail
+          REF="${UPSTREAM_REF:-main}"
+          curl -fL --retry 3 "https://github.com/shengjidaguai-china/goutoujunshi-jev-chat/archive/refs/heads/${REF}.zip" -o upstream.zip
+          mkdir upstream
+          unzip -q upstream.zip -d upstream
+          SOURCE_DIR="$(find upstream -type d -path '*/integrations/jev_ios' -print -quit)"
+          test -n "$SOURCE_DIR"
+          echo "IOS_SOURCE_DIR=$SOURCE_DIR" >> "$GITHUB_ENV"
+
+      - name: 云编译 iPhone 设备版
+        run: |
+          set -euo pipefail
+          cd "$IOS_SOURCE_DIR"
+          xcodebuild \
+            -project GoutouJunshi.xcodeproj \
+            -scheme GoutouJunshi \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: 打包未签名 IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$IOS_SOURCE_DIR/build/Build/Products/Release-iphoneos/GoutouJunshi.app"
+          test -d "$APP_PATH"
+          mkdir -p package/Payload
+          cp -R "$APP_PATH" package/Payload/
+          cd package
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/Jev-GoutouJunshi-unsigned.ipa" Payload
+          cd "$GITHUB_WORKSPACE"
+          shasum -a 256 Jev-GoutouJunshi-unsigned.ipa | tee Jev-GoutouJunshi-unsigned.ipa.sha256
+
+      - name: 上传 IPA 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jev-GoutouJunshi-unsigned-IPA
+          path: |
+            Jev-GoutouJunshi-unsigned.ipa
+            Jev-GoutouJunshi-unsigned.ipa.sha256
+          retention-days: 14
